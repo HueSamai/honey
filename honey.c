@@ -17,6 +17,8 @@ void handle_run();
 void handle_test();
 void handle_batch();
 void handle_gen();
+void handle_diff();
+void handle_exec();
 
 /* returns 0 if succeeded, otherwise failed */
 int run_test(char* inpath, char* outpath);
@@ -30,6 +32,7 @@ void log_test(int result, char* inpath);
 
 int ISVERBOSE = 0;
 int IGNORE_ERR = 0;
+int DUMP = 0;
 
 char CURRENT_COMMAND[256];
 
@@ -79,6 +82,10 @@ int main(int argc, char* argv[]) {
             handle_batch();
         } else if (!strcmp(cmd, "gen")) {
             handle_gen();
+        } else if (!strcmp(cmd, "dif")) {
+            handle_diff();
+        } else if (!strcmp(cmd, "exe")) {
+            handle_exec();
         } else {
             ERR("Invalid command!");
             continue;
@@ -125,6 +132,36 @@ void handle_test() {
     outpath[i] = 0;
 
     log_test(run_test(inpath, outpath), inpath);
+}
+
+void handle_diff() {
+    char inpath[256], cmd[1024];
+
+    int i = 0;
+    while (ch != '\n') {
+        inpath[i++] = ch;
+        ch = getchar();
+    }
+    ch = getchar();
+    inpath[i] = 0;
+
+    sprintf(cmd, "git diff --no-index --word-diff ./honey/tests/%s ./honey/dump/%s | cat", inpath, inpath);
+
+    system(cmd);
+}
+
+void handle_exec() {
+    char cmd[1024];
+
+    int i = 0;
+    while (ch != '\n') {
+        cmd[i++] = ch;
+        ch = getchar();
+    }
+    ch = getchar();
+    cmd[i] = 0;
+
+    system(cmd);
 }
 
 void log_test(int result, char* inpath) {
@@ -199,12 +236,22 @@ void handle_gen() {
 int run_test(char* inpath, char* outpath) {
     char cmd[1024];
     char fullpath[256];
+    char dumppath[512];
     FILE *out, *expected_out;
     int difference = 0;
 
-    sprintf(cmd, "%s ./honey/tests/%s 2>&1", CURRENT_COMMAND, inpath);
+    if (DUMP)
+        sprintf(cmd, "%s ./honey/tests/%s > ./honey/dump/%s 2>&1", CURRENT_COMMAND, inpath, outpath);
+    else
+        sprintf(cmd, "%s ./honey/tests/%s 2>&1", CURRENT_COMMAND, inpath);
 
-    out = popen(cmd, "r");
+    sprintf(dumppath, "./honey/dump/%s", outpath);
+    if (DUMP) {
+        system(cmd);
+        out = fopen(dumppath, "r");
+    }
+    else
+        out = popen(cmd, "r");
 
     sprintf(fullpath, "./honey/tests/%s", outpath);
 
@@ -222,7 +269,10 @@ int run_test(char* inpath, char* outpath) {
     }
 
     fclose(expected_out);
-    pclose(out);
+    if (DUMP)
+        pclose(out);
+    else
+        fclose(out);
 
     return difference;
 }
@@ -239,6 +289,9 @@ void setflags(char* str) {
             } break;
             case 'i': {
                 IGNORE_ERR = 1;
+            } break;
+            case 'd': {
+                DUMP = 1;
             } break;
         }
     }
