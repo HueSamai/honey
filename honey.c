@@ -17,22 +17,25 @@ void handle_run();
 void handle_test();
 void handle_batch();
 void handle_gen();
-void handle_diff();
 void handle_exec();
+
+void gen_dump(char*, int);
 
 /* returns 0 if succeeded, otherwise failed */
 int run_test(char* inpath, char* outpath);
 
-void log_test(int result, char* inpath);
+void log_test(int result, char* inpath, char* outpath);
 
 #define ERR(str) do {\
     if (!IGNORE_ERR) fprintf(stderr, str);\
+    fprintf(stderr, "\n");\
     while (ch != '\n') ch = getchar();\
 } while (0)
 
 int ISVERBOSE = 0;
 int IGNORE_ERR = 0;
 int DUMP = 0;
+int SHOWDIFF = 0;
 
 char CURRENT_COMMAND[256];
 
@@ -41,10 +44,12 @@ int TESTSSUCCEEDED = 0;
 
 int failed_idx = 0;
 char FAILED_STACK[1000][256];
+char FAILED_STACK_OUT[1000][256];
 
 char ch;
 int main(int argc, char* argv[]) {
     int i = 0;
+    char cmd[2048];
 
     if (argc > 2) {
         printhelp();
@@ -82,8 +87,6 @@ int main(int argc, char* argv[]) {
             handle_batch();
         } else if (!strcmp(cmd, "gen")) {
             handle_gen();
-        } else if (!strcmp(cmd, "dif")) {
-            handle_diff();
         } else if (!strcmp(cmd, "exe")) {
             handle_exec();
         } else {
@@ -99,6 +102,10 @@ int main(int argc, char* argv[]) {
         printf("\nFAILED TEST CASES:\n");
     for (i = 0; i < failed_idx; ++i) {
         printf(" - %s\n", FAILED_STACK[i]);
+        if (SHOWDIFF) {
+            sprintf(cmd, "diff -y --suppress-common-lines ./honey/tests/%s ./honey/dump/%s", FAILED_STACK_OUT[i], FAILED_STACK_OUT[i]);
+            system(cmd);
+        }
     }
 
     return 0;
@@ -131,23 +138,8 @@ void handle_test() {
     }
     outpath[i] = 0;
 
-    log_test(run_test(inpath, outpath), inpath);
-}
-
-void handle_diff() {
-    char inpath[256], cmd[1024];
-
-    int i = 0;
-    while (ch != '\n') {
-        inpath[i++] = ch;
-        ch = getchar();
-    }
-    ch = getchar();
-    inpath[i] = 0;
-
-    sprintf(cmd, "git diff --no-index --word-diff ./honey/tests/%s ./honey/dump/%s | cat", inpath, inpath);
-
-    system(cmd);
+    if (DUMP) gen_dump(outpath, 0);
+    log_test(run_test(inpath, outpath), inpath, outpath);
 }
 
 void handle_exec() {
@@ -164,11 +156,12 @@ void handle_exec() {
     system(cmd);
 }
 
-void log_test(int result, char* inpath) {
+void log_test(int result, char* inpath, char* outpath) {
     if (!result) {
         ++TESTSSUCCEEDED;
     } else {
-        strcpy(FAILED_STACK[failed_idx++], inpath);
+        strcpy(FAILED_STACK[failed_idx], inpath);
+        strcpy(FAILED_STACK_OUT[failed_idx++], outpath);
     }
     ++TESTSRUN;
 }
@@ -196,11 +189,13 @@ void handle_batch() {
 
     max = atoi(num);
 
+    if (DUMP) gen_dump(dir, 1);
+
     for (i = 1; i <= max; ++i) {
         sprintf(inpath, "%s/%d.in", dir, i);
         sprintf(outpath, "%s/%d.out", dir, i);
 
-        log_test(run_test(inpath, outpath), inpath);
+        log_test(run_test(inpath, outpath), inpath, outpath);
     }
 }
 
@@ -234,14 +229,15 @@ void handle_gen() {
 }
 
 int run_test(char* inpath, char* outpath) {
-    char cmd[1024];
+    char cmd[2048];
     char fullpath[256];
     char dumppath[512];
     FILE *out, *expected_out;
     int difference = 0;
 
-    if (DUMP)
+    if (DUMP) {
         sprintf(cmd, "%s ./honey/tests/%s > ./honey/dump/%s 2>&1", CURRENT_COMMAND, inpath, outpath);
+    }
     else
         sprintf(cmd, "%s ./honey/tests/%s 2>&1", CURRENT_COMMAND, inpath);
 
@@ -293,8 +289,21 @@ void setflags(char* str) {
             case 'd': {
                 DUMP = 1;
             } break;
+            case 's': {
+                SHOWDIFF = 1;
+                DUMP = 1;
+            } break;
         }
     }
+}
+
+void gen_dump(char* outpath, int isdir) {
+    char cmd[1024];
+    if (isdir)
+        sprintf(cmd, "mkdir -p -- ./honey/dump/%s", outpath);
+    else
+        sprintf(cmd, "mkdir -p -- ./honey/dump/%s.k && rm -rf ./honey/dump/%s.k", outpath, outpath);
+    system(cmd);
 }
 
 void printhelp() {
