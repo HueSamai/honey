@@ -41,6 +41,7 @@ There are three optional flags:
 - h: help (displays a help screen, and terminates honey prematurely)
 - v: verbose (log all stdout from test instances)
 - i: ignore errors (doesn't output honey errors)
+- d: dump (dumps files into honey/dump)
 
 ## Honey CLI
 Honey provides a simple CLI for testing. You can write scripts and then pipe it to honey to automatically run these tests. (This is what the basic testing example of honey does)
@@ -68,6 +69,14 @@ Let's say we had a folder `testbat` in `honey/tests` and inside it had `1.in`, `
 gen (generate) makes generating test files easy. It works the same way as `bat` and has the same arguments, and runs the command with `1.in`, `2.in`, etc. but instead of checking your commands output against `.out`, it pipes stdout and stderr into the corresponding `.out` file. These files can then be sent to a friend to test your outputs against each other.
 Let's stick with the same example as we had in bat, but now we want to generate the output:
 ```gen testbat 2```
+
+### dif
+dif (difference) shows the difference of your dump file and the expected output file. Let's say you ran a test `scanner/1.in` and it outputted to `scanner/1.out`, then you can run:
+```dif scanner/1.out```
+
+### exe
+exe (execute) executes an arbitrary once of command. Let's say you want to compile the users code before running test cases:
+```exe cd src && make testscanner && cd ..```
 
 ## That's it!
 
