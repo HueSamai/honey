@@ -307,5 +307,5 @@ void gen_dump(char* outpath, int isdir) {
 }
 
 void printhelp() {
-    printf("Usage: honey [flags] < [input]\nPossible flags: vhi\n");
+    printf("TL;DR: ./honeyc s < [inputfile]\n\nUsage: honeyc [flags] < [input]\nPossible flags: vhids\n");
 }
