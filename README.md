@@ -42,6 +42,7 @@ There are three optional flags:
 - v: verbose (log all stdout from test instances)
 - i: ignore errors (doesn't output honey errors)
 - d: dump (dumps files into honey/dump)
+- s: show (forces dump and shows the differences in your code with the output)
 
 ## Honey CLI
 Honey provides a simple CLI for testing. You can write scripts and then pipe it to honey to automatically run these tests. (This is what the basic testing example of honey does)
