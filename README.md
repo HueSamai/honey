@@ -36,7 +36,7 @@ Where `testfilename` is replaced with one of the test suite files you've downloa
 There are also optional flags to run honey with. Honey flags are single characters concatenated to each other and passed in as the second argument.
 E.g: ```./honeyc [vhids]```
 
-There are three optional flags:
+There are five optional flags:
 
 - h: help (displays a help screen, and terminates honey prematurely)
 - v: verbose (log all stdout from test instances)
