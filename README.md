@@ -5,7 +5,7 @@
 
 # Honey
 
-Honey is a tool made to help test the METL Project for the CS244 module for Stellenbosch 2026. The goal of honey is to provide an easy way to generate and run test cases.
+Honey is a testing framework made to help test the METL Project for the CS244 module for Stellenbosch 2026. The goal of honey is to provide an easy way to generate and run test cases.
 
 ## Building honey
 
@@ -26,15 +26,15 @@ ALWAYS run honey from your metl root directory.
 
 This is easiest way to run honey:
 ```
-./honeyc < ./honey/tests/[testfilename].honey
+./honeyc s < ./honey/tests/[testfilename].honey
 ```
 
-Where `testfilename` is replaced with one of the test suite files you've downloaded.
+Where `testfilename` is replaced with one of the test suite files you've downloaded. The `s` flag, shows the differences, and dumps your output to `honey/dump`, which is useful to see what your output was.
 
 ## Flags
 
 There are also optional flags to run honey with. Honey flags are single characters concatenated to each other and passed in as the second argument.
-E.g: ```./honeyc [vhi]```
+E.g: ```./honeyc [vhids]```
 
 There are three optional flags:
 
@@ -70,14 +70,12 @@ gen (generate) makes generating test files easy. It works the same way as `bat` 
 Let's stick with the same example as we had in bat, but now we want to generate the output:
 ```gen testbat 2```
 
-### dif
-dif (difference) shows the difference of your dump file and the expected output file. Let's say you ran a test `scanner/1.in` and it outputted to `scanner/1.out`, then you can run:
-```dif scanner/1.out```
-
 ### exe
 exe (execute) executes an arbitrary once of command. Let's say you want to compile the users code before running test cases:
 ```exe cd src && make testscanner && cd ..```
 
 ## That's it!
 
-That's it! Honey is super simple. It doesn't provide a lot of feedback, but provides a basic interface to test.
+That's it! Honey is a super lightweight testing framework. It doesn't provide a lot of feedback, but provides a basic interface to test.
+
+Also the code is horrible.
