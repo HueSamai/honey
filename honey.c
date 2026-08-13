@@ -10,7 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void setflags(char*);
+void setflag(char*, int);
+int getflag(char c);
+
 void printhelp();
 
 void handle_run();
@@ -21,21 +23,28 @@ void handle_exec();
 
 void gen_dump(char*, int);
 
+int parse_arg1(char*);
+int parse_arg2(char*);
+
 /* returns 0 if succeeded, otherwise failed */
 int run_test(char* inpath, char* outpath);
 
 void log_test(int result, char* inpath, char* outpath);
 
 #define ERR(str) do {\
-    if (!IGNORE_ERR) fprintf(stderr, str);\
     fprintf(stderr, "\n");\
-    while (ch != '\n') ch = getchar();\
+    while (ch != '\n') ch = fgetc(infile);\
 } while (0)
 
-int ISVERBOSE = 0;
-int IGNORE_ERR = 0;
-int DUMP = 0;
-int SHOWDIFF = 0;
+int flags = 0;
+
+int cmd_idx = 0;
+int IDX_TO_ARGV_IDX[256];
+
+#define DUMP (!getflag('s'))
+#define SHOWDIFF (!getflag('s'))
+#define SHOWHELP getflag('h')
+#define CLI getflag('c')
 
 char CURRENT_COMMAND[256];
 
@@ -47,37 +56,57 @@ char FAILED_STACK[1000][256];
 char FAILED_STACK_OUT[1000][256];
 
 char ch;
+FILE *infile;
 int main(int argc, char* argv[]) {
     int i = 0;
     char cmd[2048];
 
-    if (argc > 2) {
+    if (argc == 1) {
         printhelp();
         return 0;
     }
 
-    if (argc > 1) setflags(argv[1]);
+    for (i = 1; i < argc; ++i)
+        setflag(argv[i], i);
 
-    ch = getchar();
+
+    if (CLI) {
+        if (cmd_idx > 0) {
+            printhelp();
+            return 0;
+        }
+        infile = stdin;
+    }
+    else {
+        char fullpath[256];
+        if (cmd_idx != 1 || SHOWHELP) {
+            printhelp();
+            return 0;
+        }
+        sprintf(fullpath, "./honey/tests/%s.honey", argv[IDX_TO_ARGV_IDX[0]]);
+        infile = fopen(fullpath, "r");
+    }
+
+    ch = fgetc(infile);
     while (ch != EOF) {
         char cmd[4];
 
         /* ignore whitespace */
-        while (isspace(ch)) ch = getchar();
+        while (isspace(ch)) ch = fgetc(infile);
         if (ch == EOF) break;
 
         cmd[0] = ch;
-        cmd[1] = getchar();
-        cmd[2] = getchar();
+        cmd[1] = fgetc(infile);
+        cmd[2] = fgetc(infile);
         cmd[3] = 0;
 
-        ch = getchar();
+        ch = fgetc(infile);
         if (ch != ' ') {
             ERR("Error with command syntax.");
             continue;
         }
 
-        while (isspace(ch)) ch = getchar();
+        while (isspace(ch)) ch = fgetc(infile);
 
         if (!strcmp(cmd, "run")) {
             handle_run();
@@ -99,23 +128,48 @@ int main(int argc, char* argv[]) {
     printf("PERCENTAGE:\t\t%.2f\n", (TESTSSUCCEEDED / (float)TESTSRUN) * 100.0);
 
     if (failed_idx > 0)
-        printf("\nFAILED TEST CASES:\n");
+        printf("\nFAILED TEST CASES:\n\n");
     for (i = 0; i < failed_idx; ++i) {
         printf(" - %s\n", FAILED_STACK[i]);
         if (SHOWDIFF) {
             sprintf(cmd, "diff -y --suppress-common-lines ./honey/tests/%s ./honey/dump/%s", FAILED_STACK_OUT[i], FAILED_STACK_OUT[i]);
             system(cmd);
         }
+
+        if (SHOWDIFF)
+            printf("\n\n\n");
     }
 
+    if (!CLI) fclose(infile);
+
     return 0;
+}
+
+int parse_arg1(char* buffer) {
+    int i = 0;
+    while (ch != ' ') {
+        buffer[i++] = ch;
+        ch = fgetc(infile);
+    }
+    buffer[i] = 0;
+    return i;
+}
+
+int parse_arg2(char* buffer) {
+    int i = 0;
+    while (ch != '\n') {
+        buffer[i++] = ch;
+        ch = fgetc(infile);
+    }
+    buffer[i] = 0;
+    return i;
 }
 
 void handle_run() {
     int i = 0;
     while (ch != '\n') {
         CURRENT_COMMAND[i++] = ch;
-        ch = getchar();
+        ch = fgetc(infile);
     }
     CURRENT_COMMAND[i] = 0;
 }
@@ -123,20 +177,8 @@ void handle_run() {
 void handle_test() {
     char inpath[256], outpath[256];
 
-    int i = 0;
-    while (ch != ' ') {
-        inpath[i++] = ch;
-        ch = getchar();
-    }
-    ch = getchar();
-    inpath[i] = 0;
-    
-    i = 0;
-    while (ch != '\n') {
-        outpath[i++] = ch;
-        ch = getchar();
-    }
-    outpath[i] = 0;
+    parse_arg1(inpath);
+    parse_arg2(outpath);
 
     if (DUMP) gen_dump(outpath, 0);
     log_test(run_test(inpath, outpath), inpath, outpath);
@@ -145,13 +187,7 @@ void handle_test() {
 void handle_exec() {
     char cmd[1024];
 
-    int i = 0;
-    while (ch != '\n') {
-        cmd[i++] = ch;
-        ch = getchar();
-    }
-    ch = getchar();
-    cmd[i] = 0;
+    parse_arg1(cmd);
 
     system(cmd);
 }
@@ -172,21 +208,11 @@ void handle_batch() {
     int max;
 
     int i = 0;
-    while (ch != ' ') {
-        dir[i++] = ch;
-        ch = getchar();
-    }
-    ch = getchar();
+    i = parse_arg1(dir);
     if (dir[i - 1] == '/') --i;
     dir[i] = 0;
     
-    i = 0;
-    while (ch != '\n') {
-        num[i++] = ch;
-        ch = getchar();
-    }
-    num[i] = 0;
-
+    parse_arg2(num);
     max = atoi(num);
 
     if (DUMP) gen_dump(dir, 1);
@@ -205,21 +231,11 @@ void handle_gen() {
     int max;
 
     int i = 0;
-    while (ch != ' ') {
-        dir[i++] = ch;
-        ch = getchar();
-    }
-    ch = getchar();
+    i = parse_arg1(dir);
     if (dir[i - 1] == '/') --i;
     dir[i] = 0;
     
-    i = 0;
-    while (ch != '\n') {
-        num[i++] = ch;
-        ch = getchar();
-    }
-    num[i] = 0;
-
+    parse_arg2(num);
     max = atoi(num);
 
     for (i = 1; i <= max; ++i) {
@@ -258,8 +274,6 @@ int run_test(char* inpath, char* outpath) {
         c = fgetc(out);
         d = fgetc(expected_out);
 
-        if (ISVERBOSE) putchar(c); 
-
         if (c != d) ++difference; 
         if (c == EOF && d == EOF) break;
     }
@@ -273,28 +287,17 @@ int run_test(char* inpath, char* outpath) {
     return difference;
 }
 
-void setflags(char* str) {
-    while (*str) {
-        switch (*str++) {
-            case 'h': {
-                printhelp();
-                exit(0);
-            } break;
-            case 'v': {
-                ISVERBOSE = 1;
-            } break;
-            case 'i': {
-                IGNORE_ERR = 1;
-            } break;
-            case 'd': {
-                DUMP = 1;
-            } break;
-            case 's': {
-                SHOWDIFF = 1;
-                DUMP = 1;
-            } break;
-        }
+void setflag(char* str, int idx) {
+    if (*str++ != '-') {
+        IDX_TO_ARGV_IDX[cmd_idx++] = idx;
+        return;
     }
+    if (*str < 'a' || *str > 'z') return; 
+    flags |= 1 << (*str - 'a');
+}
+
+int getflag(char c) {
+    return flags & (1 << (c - 'a'));
 }
 
 void gen_dump(char* outpath, int isdir) {
@@ -307,5 +310,5 @@ void gen_dump(char* outpath, int isdir) {
 }
 
 void printhelp() {
-    printf("TL;DR: ./honeyc s < [inputfile]\n\nUsage: honeyc [flags] < [input]\nPossible flags: vhids\n");
+    printf("TL;DR: ./honeyc [testfile]\n\nUsage: honeyc [flags] [testfile] (prepends 'honey/tests/' and adds '.honey')\nPossible flags: -c(li) -s(implified output) -h(elp)\n");
 }
