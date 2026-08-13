@@ -26,28 +26,25 @@ ALWAYS run honey from your metl root directory.
 
 This is easiest way to run honey:
 ```
-./honeyc s < ./honey/tests/[testfilename].honey
+./honeyc [testfile]
 ```
 
-Where `testfilename` is replaced with one of the test suite files you've downloaded. The `s` flag, shows the differences, and dumps your output to `honey/dump`, which is useful to see what your output was.
+Where `testfile` is replaced with one of the test suite files you've downloaded. Honey looks for the testfile by doing `./honey/tests/[testfile].honey`.
 
 ## Flags
 
-There are also optional flags to run honey with. Honey flags are single characters concatenated to each other and passed in as the second argument.
-E.g: ```./honeyc [vhids]```
+There are also optional flags to run honey with. To see them you can run `./honeyc -h`
 
 There are five optional flags:
 
-- h: help (displays a help screen, and terminates honey prematurely)
-- v: verbose (log all stdout from test instances)
-- i: ignore errors (doesn't output honey errors)
-- d: dump (dumps files into honey/dump)
-- s: show (forces dump and shows the differences in your code with the output)
+- c: cli (runs honey as a command line interface and reads from stdin instead of an input file)
+- s: simplified view (forces dump and shows the differences in your code with the output)
+- h: help (shows the help screen)
 
-## Honey CLI
-Honey provides a simple CLI for testing. You can write scripts and then pipe it to honey to automatically run these tests. (This is what the basic testing example of honey does)
+## Honey CLI and writing .honey files
+Honey provides a simple CLI. This is useful for once of tests or for generating test cases. To access the CLI, simply run `./honeyc -c`. When writing and sharing `.honey` files, all that it is doing is treating the `.honey` file as the input to the CLI. These are the commands you can run.
 
-All honey commands through the CLI follow the basic syntax: ```cmdname [arg1] [arg2]```
+All honey commands through the CLI follow the basic syntax: ```cmdname [arg1] [arg2]``` Commands are separated by newlines. There should be NO whitespace after the second argument.
 These are the valid commands:
 
 ### run
