@@ -310,5 +310,5 @@ void gen_dump(char* outpath, int isdir) {
 }
 
 void printhelp() {
-    printf("TL;DR: ./honeyc [testfile]\n\nUsage: honeyc [flags] [testfile] (prepends 'honey/tests/' and adds '.honey')\nPossible flags: -c(li) -s(implified output) -h(elp)\n");
+    printf("TL;DR: ./honeyc [testfile]\n\nUsage: honeyc [flags] [testfile] (prepends 'honey/tests/' and adds '.honey')\nPossible flags: -c(li) -s(implified output) -h(elp)\n\nNOTE: if you are running honey with '-c' you should NOT have any commands. Just run: ./honeyc -c\n");
 }
