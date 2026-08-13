@@ -187,7 +187,7 @@ void handle_test() {
 void handle_exec() {
     char cmd[1024];
 
-    parse_arg1(cmd);
+    parse_arg2(cmd);
 
     system(cmd);
 }
