@@ -7,6 +7,10 @@
 
 Honey is a testing framework made to help test the METL Project for the CS244 module for Stellenbosch 2026. The goal of honey is to provide an easy way to generate and run test cases.
 
+## Test cases
+
+Message me on WhatsApp for my test cases, or generate your own test cases and then send them to others to compare your outputs.
+
 ## Building honey
 
 To avoid issues with multiple git repos in one directory, I would instead just download the source code instead of cloning.
